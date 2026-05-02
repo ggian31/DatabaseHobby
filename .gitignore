@@ -1,0 +1,10 @@
+# Windows thumbnail databases
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# OneDrive temp files
+.DS_Store
+.directory
+*.tmp
+*.temp

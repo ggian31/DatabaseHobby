@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Listado - Mi Base de Datos de Juegos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script type="text/javascript" src="https://alcdn.msauth.net/browser/2.35.0/js/msal-browser.min.js"></script>
+</head>
+<body>
+    <div class="background-elements">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+    </div>
+    <!-- PANTALLA DE LOGIN -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-card">
+            <div class="login-icon">🎮</div>
+            <h2>Mi Catálogo Retro</h2>
+            <p>Inicia sesión con tu cuenta de Microsoft OneDrive para cargar y sincronizar tu colección de juegos.</p>
+            <button id="loginBtn" class="btn-login-main">
+                <svg width="24" height="24" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg" style="margin-right: 10px;"><path d="M10 0H0v10h10V0zM21 0H11v10h10V0zM10 11H0v10h10V11zM21 11H11v10h10V11z" fill="#00a4ef"/></svg>
+                Conectar con Microsoft
+            </button>
+        </div>
+    </div>
+
+    <!-- PANTALLA PRINCIPAL DEL CATÁLOGO -->
+    <main id="appScreen" class="container hidden">
+        <header>
+            <h1>Listado <small style="font-size: 0.4em; opacity: 0.7;">DB Personal</small></h1>
+            <div class="auth-container">
+                <div id="userInfo" class="user-info hidden"></div>
+                <button id="logoutBtn" class="btn-onedrive hidden" style="background: #ef4444; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);">Cerrar Sesión</button>
+            </div>
+            <div class="header-controls">
+                <nav class="console-nav" id="dynamicConsoleNav">
+                    <!-- Los botones se generarán dinámicamente desde JS -->
+                </nav>
+                <button id="syncBtn" class="btn-sync" onclick="syncWithOneDrive()">
+                    <span>🔄 ACTUALIZAR BASE DE DATOS</span>
+                </button>
+            </div>
+            <div class="search-container" style="display: flex; gap: 1rem; align-items: center; justify-content: center; max-width: 800px; margin: 2rem auto;">
+                <div style="position: relative; flex: 1; display: flex;">
+                    <input type="text" id="searchInput" placeholder="Buscar en la base de datos local..." style="width: 100%; padding-right: 3rem; box-sizing: border-box;">
+                    <button id="clearSearchBtn" style="position: absolute; right: 24px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: #ffffff; opacity: 0.8; font-size: 1.5rem; cursor: pointer; display: none; padding: 0; transition: opacity 0.2s;" title="Limpiar búsqueda" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">✖</button>
+                </div>
+                <button id="bulkDeleteBtn" disabled>Eliminar Seleccionados</button>
+            </div>
+        </header>
+        <div id="debugLog">Sistema listo.</div>
+        
+        <div id="fullscreenLoader">
+            <div class="spinner"></div>
+            <div id="loaderText">Procesando...</div>
+        </div>
+        
+        <div id="pagination-top" class="pagination hidden"></div>
+        <div class="table-container">
+            <table id="gamesTable">
+                <thead>
+                    <tr>
+                        <th class="col-checkbox"><input type="checkbox" id="selectAllCheckbox"></th>
+                        <th class="col-image">Imagen</th>
+                        <th class="col-title sortable" onclick="sortData('name')">Título</th>
+                        <th class="col-platform">Plataforma</th>
+                        <th class="col-location sortable" onclick="sortData('location')">Ubicación</th>
+                        <th class="col-path sortable" onclick="sortData('file')">Archivo</th>
+                        <th class="col-actions">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="gamesTableBody"></tbody>
+            </table>
+        </div>
+        <div id="pagination-bottom" class="pagination hidden"></div>
+        <div id="noResults" class="hidden"><p>No hay juegos registrados.</p></div>
+    </main>
+    
+    <div class="floating-scroll-nav">
+        <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="btn-jump-float" title="Ir arriba">↑</button>
+        <button onclick="window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'})" class="btn-jump-float" title="Ir abajo">↓</button>
+    </div>
+
+    <script src="modal.js"></script>
+    
+    <!-- CARGA DE ARCHIVOS DE CONSOLA INDIVIDUALES -->
+    <script src="consoles/nes/nes.js"></script>
+    <script src="consoles/snes/snes.js"></script>
+    <script src="consoles/gb/gb.js"></script>
+    <script src="consoles/gba/gba.js"></script>
+    <script src="consoles/neogeo/neogeo.js"></script>
+    <script src="consoles/mame/mame.js"></script>
+    <script src="consoles/cps1/cps1.js"></script>
+    <script src="consoles/cps2/cps2.js"></script>
+    <script src="consoles/cps3/cps3.js"></script>
+    <script src="consoles/dreamcast/dreamcast.js"></script>
+    <script src="consoles/ps1/ps1.js"></script>
+    <script src="consoles/n64/n64.js"></script>
+    <script src="consoles/ps2/ps2.js"></script>
+    <script src="consoles/gamecube/gamecube.js"></script>
+    <script src="consoles/ps3/ps3.js"></script>
+    <script src="consoles/wii/wii.js"></script>
+    <script src="consoles/wiiu/wiiu.js"></script>
+    <script src="consoles/switch/switch.js"></script>
+
+    <script>
+        const log = (msg) => {
+            const div = document.getElementById('debugLog');
+            if(!div) return;
+            const time = new Date().toLocaleTimeString();
+            div.innerHTML += `<div>[${time}] > ${msg}</div>`;
+            div.scrollTop = div.scrollHeight;
+        };
+
+        function showLoader(msg) {
+            document.getElementById('loaderText').textContent = msg;
+            document.getElementById('fullscreenLoader').classList.add('active');
+        }
+
+        function hideLoader() {
+            document.getElementById('fullscreenLoader').classList.remove('active');
+        }
+        
+        const msalConfig = {
+            auth: {
+                clientId: "e84e7e86-c186-43aa-906b-d1e9fe8ec578",
+                authority: "https://login.microsoftonline.com/common",
+                redirectUri: window.location.origin + window.location.pathname,
+                navigateToLoginRequestUrl: false
+            },
+            cache: { cacheLocation: "sessionStorage" }
+        };
+        const msalInstance = new msal.PublicClientApplication(msalConfig);
+        const loginRequest = { scopes: ["User.Read", "Files.Read", "Files.ReadWrite"] };
+        const tbody = document.getElementById('gamesTableBody');
+        let allGames = [];
+        let filteredGames = [];
+        let currentToken = null;
+        let currentPage = 1;
+        const itemsPerPage = 100;
+        
+        // El maestro toma la primera consola cargada como defecto (o NES si existe)
+        let currentConsole = null; 
+        let sortKey = 'name';
+        let sortDir = 1;
+
+        // FUNCIÓN DEL MAESTRO: Construye la UI usando los datos de las carpetas
+        function buildDynamicUI() {
+            if (!window.ConsoleConfig || window.ConsoleConfig.length === 0) return;
+            
+            const nav = document.getElementById('dynamicConsoleNav');
+            nav.innerHTML = '';
+            let dynamicCSS = '';
+
+            window.ConsoleConfig.forEach((c, index) => {
+                // Crear Botón
+                const btn = document.createElement('button');
+                btn.className = `console-btn btn-${c.id.toLowerCase()}`;
+                if (c.id === currentConsole) btn.classList.add('active');
+                btn.onclick = () => switchConsole(c.id);
+                btn.innerHTML = `${c.icon} ${c.name}`;
+                nav.appendChild(btn);
+
+                // Crear reglas CSS para colores y badges de esta consola
+                dynamicCSS += `
+                    .btn-${c.id.toLowerCase()}.active { 
+                        background: ${c.color} !important; 
+                        border-color: ${c.color} !important; 
+                        color: white !important; 
+                        box-shadow: 0 0 15px ${c.color}66; 
+                    }
+                    .badge-${c.id.toLowerCase()} { 
+                        background: ${c.badgeBg} !important; 
+                        color: ${c.badgeColor} !important; 
+                        ${c.badgeBg === '#000000' || c.badgeBg === '#000' ? `border: 1px solid ${c.color};` : ''}
+                    }
+                `;
+            });
+
+            // Inyectar CSS Dinámico
+            const style = document.createElement('style');
+            style.innerHTML = dynamicCSS;
+            document.head.appendChild(style);
+        }
+
+        async function init() {
+            // Inicializar configuración multi-archivo
+            if (window.ConsoleConfig && window.ConsoleConfig.length > 0) {
+                currentConsole = window.ConsoleConfig.find(c => c.id === 'NES') ? 'NES' : window.ConsoleConfig[0].id;
+                buildDynamicUI();
+            } else {
+                log("Advertencia: No se han cargado configuraciones de consola.");
+            }
+
+            try {
+                await msalInstance.handleRedirectPromise();
+                const accounts = msalInstance.getAllAccounts();
+                if (accounts.length > 0) {
+                    showLoggedInUI(accounts[0]);
+                    if(currentConsole) loadGamesFromCache(currentConsole);
+                } else {
+                    document.getElementById('loginScreen').classList.remove('hidden');
+                }
+            } catch (error) { log("Error Init: " + error.message); }
+        }
+
+        function loadGamesFromCache(consoleId) {
+            const cachedData = localStorage.getItem(`db_${consoleId}`);
+            if (cachedData) {
+                log(`Cargando ${consoleId} desde memoria...`);
+                allGames = JSON.parse(cachedData);
+                filteredGames = [...allGames];
+                currentPage = 1;
+                renderTable();
+                log(`¡Listo! ${allGames.length} juegos.`);
+            } else {
+                log(`Base de datos de ${consoleId} vacía.`);
+                allGames = []; filteredGames = []; renderTable();
+                if (msalInstance.getAllAccounts().length > 0 && consoleId === 'SNES') syncWithOneDrive();
+            }
+        }
+
+        function switchConsole(consoleId) {
+            currentConsole = consoleId;
+            document.querySelectorAll('.console-btn').forEach(btn => btn.classList.remove('active'));
+            const activeBtn = document.querySelector(`.btn-${consoleId.toLowerCase()}`);
+            if(activeBtn) activeBtn.classList.add('active');
+            loadGamesFromCache(consoleId);
+        }
+
+        // MOTOR MAESTRO DE SINCRONIZACIÓN
+        async function syncWithOneDrive() {
+            const consoleData = window.ConsoleConfig.find(c => c.id === currentConsole);
+            if (!consoleData) return;
+
+            allGames = []; filteredGames = []; renderTable();
+            
+            if (!consoleData.paths || consoleData.paths.length === 0) { 
+                log(`Aviso: Rutas para ${consoleData.name} aún no configuradas en consoles/${consoleData.id.toLowerCase()}/${consoleData.id.toLowerCase()}.js`); 
+                return; 
+            }
+            
+            showLoader(`Sincronizando ${consoleData.name} con OneDrive...`);
+            try {
+                log(`Conectando con OneDrive para ${consoleData.name}...`);
+                currentToken = await getAccessToken();
+                let rootId = null;
+                for (let p of consoleData.paths) {
+                    const check = await fetch(`https://graph.microsoft.com/v1.0/me/drive/root:${encodeURI(p)}`, { headers: { 'Authorization': `Bearer ${currentToken}` } });
+                    if (check.ok) { const d = await check.json(); rootId = d.id; break; }
+                }
+                if (!rootId) throw new Error("La ruta base en OneDrive no existe o es incorrecta.");
+                
+                const rootChildren = await fetchAll(`https://graph.microsoft.com/v1.0/me/drive/items/${rootId}/children`);
+                
+                // Si la consola tiene "targets" definidos (como SNES)
+                if (consoleData.targets && consoleData.targets.length > 0) {
+                    for (const t of consoleData.targets) {
+                        const folder = rootChildren.find(f => f.name.toLowerCase() === t.name.toLowerCase());
+                        if (folder) {
+                            log(`Sincronizando ${t.platform}...`);
+                            const folderChildren = await fetchAll(`https://graph.microsoft.com/v1.0/me/drive/items/${folder.id}/children`);
+                            const imageMap = {};
+                            const imgFolderNames = Array.isArray(t.img) ? t.img.map(i => i.toLowerCase()) : [t.img.toLowerCase()];
+                            for (const imgName of imgFolderNames) {
+                                const imgFolder = folderChildren.find(f => f.name.toLowerCase() === imgName);
+                                if (imgFolder) await crawlImages(imgFolder.id, imageMap);
+                            }
+                            await crawlFolder(folder.id, `/${t.name}`, t.platform, imageMap);
+                        }
+                    }
+                } else {
+                    // COMPORTAMIENTO POR DEFECTO: Escanea la carpeta base recursivamente
+                    log(`Sincronizando todos los archivos y buscando imágenes en todas las subcarpetas...`);
+                    const imageMap = {};
+                    await crawlImages(rootId, imageMap);
+                    await crawlFolder(rootId, `/`, consoleData.name, imageMap);
+                }
+
+                localStorage.setItem(`db_${currentConsole}`, JSON.stringify(allGames));
+                filteredGames = [...allGames];
+                renderTable();
+                log(`¡Actualización completa para ${consoleData.name}!`);
+            } catch (error) { log("Error: " + error.message); }
+            finally { hideLoader(); }
+        }
+
+        async function getAccessToken() {
+            const accounts = msalInstance.getAllAccounts();
+            if (accounts.length === 0) return null;
+            const request = { scopes: loginRequest.scopes, account: accounts[0] };
+            try { return (await msalInstance.acquireTokenSilent(request)).accessToken; } 
+            catch (e) { return (await msalInstance.acquireTokenPopup(request)).accessToken; }
+        }
+
+        async function fetchAll(url) {
+            let results = [];
+            let nextUrl = url;
+            while (nextUrl) {
+                const res = await fetch(nextUrl, { headers: { 'Authorization': `Bearer ${currentToken}` } });
+                const data = await res.json();
+                if (data.value) results = results.concat(data.value);
+                nextUrl = data['@odata.nextLink'] || null;
+            }
+            return results;
+        }
+
+        async function crawlImages(folderId, imageMap) {
+            try {
+                const items = await fetchAll(`https://graph.microsoft.com/v1.0/me/drive/items/${folderId}/children`);
+                for (const item of items) {
+                    if (item.folder) {
+                        if (item.name.toUpperCase() !== 'BORRAR') {
+                            await crawlImages(item.id, imageMap);
+                        }
+                    } else {
+                        const isImage = item.name.toLowerCase().match(/\.(png|jpg|jpeg|gif|webp)$/);
+                        if (isImage) {
+                            const extName = item.name.substring(0, item.name.lastIndexOf('.')).toLowerCase();
+                            imageMap[extName] = { url: item['@microsoft.graph.downloadUrl'], id: item.id };
+                        }
+                    }
+                }
+            } catch(e) {}
+        }
+
+        async function crawlFolder(folderId, relativePath, platform, imageMap) {
+            const items = await fetchAll(`https://graph.microsoft.com/v1.0/me/drive/items/${folderId}/children`);
+            const extensions = ['.zip', '.smc', '.sfc', '.nes', '.gb', '.gbc', '.gba', '.iso', '.bin', '.chd', '.cdi', '.n64', '.z64', '.v64'];
+            for (const item of items) {
+                if (item.folder) {
+                    if (item.name.toLowerCase().endsWith('.zip')) addGame(item, relativePath, platform, imageMap);
+                    else if (!item.name.toLowerCase().includes('image') && item.name.toLowerCase() !== 'img' && item.name.toUpperCase() !== 'BORRAR') {
+                        await crawlFolder(item.id, `${relativePath}/${item.name}`, platform, imageMap);
+                    }
+                } else if (extensions.some(ext => item.name.toLowerCase().endsWith(ext))) {
+                    addGame(item, relativePath, platform, imageMap);
+                }
+            }
+        }
+
+        function addGame(item, relativePath, platform, imageMap) {
+            const basename = item.name.substring(0, item.name.lastIndexOf('.'));
+            const imageData = imageMap[basename.toLowerCase()];
+            allGames.push({ id: item.id, name: basename, platform: platform, location: relativePath, file: item.name, image: imageData ? imageData.url : null, imageId: imageData ? imageData.id : null });
+        }
+
+        const renderTable = () => {
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            const totalPages = Math.ceil(filteredGames.length / itemsPerPage);
+            updatePaginationUI(totalPages);
+            if (filteredGames.length === 0) { document.getElementById('noResults').classList.remove('hidden'); return; }
+            document.getElementById('noResults').classList.add('hidden');
+            const start = (currentPage - 1) * itemsPerPage;
+            const pageItems = filteredGames.slice(start, start + itemsPerPage);
+            
+            pageItems.forEach(game => {
+                const tr = document.createElement('tr');
+                // Busca la configuración de la consola para aplicar la clase del badge
+                const consoleConfig = window.ConsoleConfig.find(c => c.id === game.platform) 
+                                      || window.ConsoleConfig.find(c => c.name === game.platform);
+                const bClass = consoleConfig ? `badge-${consoleConfig.id.toLowerCase()}` : `badge-${game.platform.toLowerCase().replace(' ', '')}`;
+                
+                tr.innerHTML = `
+                    <td class="col-checkbox"><input type="checkbox" class="row-checkbox" value="${game.id}" data-imageid="${game.imageId || ''}" data-name="${game.name}"></td>
+                    <td class="col-image"><img src="${game.image || ''}" class="${game.image ? '' : 'fallback-img'}" loading="lazy" onerror="window.refreshImage(this, '${game.imageId}', '${game.id}')"></td>
+                    <td class="col-title"><strong>${game.name}</strong></td>
+                    <td class="col-platform"><span class="badge ${bClass}">${game.platform}</span></td>
+                    <td class="col-location">${game.location}</td>
+                    <td class="col-path">${game.file}</td>
+                    <td class="col-actions"><button class="btn-delete">ELIMINAR</button></td>
+                `;
+                
+                const deleteBtn = tr.querySelector('.btn-delete');
+                deleteBtn.addEventListener('click', () => {
+                    handleDeleteClick(game.id, game.imageId || '', game.name);
+                });
+                
+                const checkbox = tr.querySelector('.row-checkbox');
+                if (checkbox) checkbox.addEventListener('change', updateBulkDeleteBtn);
+                
+                tr.addEventListener('click', (e) => {
+                    if (e.target.tagName.toLowerCase() === 'input' || e.target.closest('button')) return;
+                    if (checkbox) {
+                        checkbox.checked = !checkbox.checked;
+                        updateBulkDeleteBtn();
+                    }
+                });
+                
+                tr.style.cursor = 'pointer';
+                
+                tbody.appendChild(tr);
+            });
+            
+            const selectAll = document.getElementById('selectAllCheckbox');
+            if (selectAll) selectAll.checked = false;
+            updateBulkDeleteBtn();
+        };
+
+        function updatePaginationUI(totalPages) {
+            const pT = document.getElementById('pagination-top');
+            const pB = document.getElementById('pagination-bottom');
+            if (totalPages <= 1 && filteredGames.length < itemsPerPage) { pT.classList.add('hidden'); pB.classList.add('hidden'); return; }
+            pT.classList.remove('hidden'); pB.classList.remove('hidden');
+            const startItem = (currentPage - 1) * itemsPerPage + 1;
+            const endItem = Math.min(currentPage * itemsPerPage, filteredGames.length);
+            const content = `
+                <div class="nav-container">
+                    <button class="btn-page btn-prev">Anterior</button>
+                    <span class="page-info">${startItem}–${endItem} de ${filteredGames.length.toLocaleString('es-ES')}</span>
+                    <button class="btn-page btn-next">Siguiente</button>
+                    <button class="btn-jump btn-down">IR ABAJO ↓</button>
+                </div>
+            `;
+            pT.innerHTML = content;
+            pB.innerHTML = content.replace('btn-down', 'btn-up').replace('IR ABAJO ↓', 'IR ARRIBA ↑');
+            
+            [pT, pB].forEach(p => {
+                const prev = p.querySelector('.btn-prev');
+                const next = p.querySelector('.btn-next');
+                const jump = p.querySelector('.btn-jump');
+                
+                if(prev) {
+                    prev.disabled = currentPage === 1;
+                    prev.onclick = () => changePage(-1);
+                }
+                if(next) {
+                    next.disabled = currentPage === totalPages;
+                    next.onclick = () => changePage(1);
+                }
+                if(jump) {
+                    jump.onclick = () => {
+                        if (jump.classList.contains('btn-down')) window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'});
+                        else window.scrollTo({top: 0, behavior: 'smooth'});
+                    };
+                }
+            });
+        }
+
+        window.changePage = (dir) => { currentPage += dir; renderTable(); };
+
+        function sortData(key) {
+            if (sortKey === key) sortDir *= -1; else { sortKey = key; sortDir = 1; }
+            filteredGames.sort((a, b) => (a[key]||"").toLowerCase().localeCompare((b[key]||"").toLowerCase()) * sortDir);
+            renderTable();
+        }
+
+        function updateBulkDeleteBtn() {
+            const checkedBoxes = document.querySelectorAll('.row-checkbox:checked');
+            const bulkBtn = document.getElementById('bulkDeleteBtn');
+            if (!bulkBtn) return;
+            bulkBtn.disabled = checkedBoxes.length === 0;
+            bulkBtn.textContent = checkedBoxes.length > 0 ? `Eliminar Seleccionados (${checkedBoxes.length})` : `Eliminar Seleccionados`;
+            
+            const selectAll = document.getElementById('selectAllCheckbox');
+            if (selectAll) {
+                const allCheckboxes = document.querySelectorAll('.row-checkbox');
+                selectAll.checked = allCheckboxes.length > 0 && checkedBoxes.length === allCheckboxes.length;
+            }
+        }
+
+        document.getElementById('selectAllCheckbox').addEventListener('change', (e) => {
+            const checkboxes = document.querySelectorAll('.row-checkbox');
+            checkboxes.forEach(cb => cb.checked = e.target.checked);
+            updateBulkDeleteBtn();
+        });
+
+        document.getElementById('bulkDeleteBtn').addEventListener('click', () => {
+            const checkedBoxes = Array.from(document.querySelectorAll('.row-checkbox:checked'));
+            if (checkedBoxes.length === 0) return;
+            
+            if (typeof CustomModal === 'undefined') {
+                log("Error: El componente de confirmación no se ha cargado.");
+                return;
+            }
+            
+            CustomModal.show(`¿Estás seguro de eliminar los ${checkedBoxes.length} juegos seleccionados permanentemente de OneDrive?`, async () => {
+                showLoader(`Eliminando 1 de ${checkedBoxes.length} juegos de OneDrive...`);
+                try {
+                    const token = await getAccessToken();
+                    let deletedCount = 0;
+                    
+                    for (const cb of checkedBoxes) {
+                        document.getElementById('loaderText').textContent = `Eliminando ${deletedCount + 1} de ${checkedBoxes.length} juegos de OneDrive...`;
+                        const gameId = cb.value;
+                        const imageId = cb.dataset.imageid;
+                        
+                        const res = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${gameId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+                        if (res.ok) {
+                            if (imageId) {
+                                try { await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${imageId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }); } catch(err) {}
+                            }
+                            allGames = allGames.filter(g => g.id !== gameId);
+                            filteredGames = filteredGames.filter(g => g.id !== gameId);
+                            deletedCount++;
+                        }
+                    }
+                    
+                    localStorage.setItem(`db_${currentConsole}`, JSON.stringify(allGames));
+                    renderTable();
+                    log(`Borrado masivo completado: ${deletedCount} juegos eliminados.`);
+                } catch (e) { log("Error: " + e.message); }
+                finally { hideLoader(); }
+            });
+        });
+
+        function handleDeleteClick(gameId, imageId, gameName) {
+            if (typeof CustomModal === 'undefined') {
+                log("Error: El componente de confirmación no se ha cargado.");
+                return;
+            }
+            
+            CustomModal.show(gameName, async () => {
+                showLoader("Eliminando juego de OneDrive...");
+                try {
+                    const token = await getAccessToken();
+                    const res = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${gameId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+                    if (res.ok) {
+                        if (imageId) await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${imageId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+                        allGames = allGames.filter(g => g.id !== gameId);
+                        localStorage.setItem(`db_${currentConsole}`, JSON.stringify(allGames));
+                        filteredGames = filteredGames.filter(g => g.id !== gameId);
+                        renderTable();
+                        log("Eliminado con éxito.");
+                    }
+                } catch (e) { log("Error: " + e.message); }
+                finally { hideLoader(); }
+            });
+        }
+
+        function showLoggedInUI(account) {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('appScreen').classList.remove('hidden');
+            document.getElementById('logoutBtn').classList.remove('hidden');
+            const uInfo = document.getElementById('userInfo');
+            uInfo.classList.remove('hidden');
+            uInfo.textContent = `Colección de: ${account.name}`;
+        }
+
+        document.getElementById('loginBtn').addEventListener('click', async () => {
+            try {
+                const response = await msalInstance.loginPopup(loginRequest);
+                showLoggedInUI(response.account);
+                syncWithOneDrive();
+            } catch (error) { log("Error login: " + error.message); }
+        });
+        
+        document.getElementById('logoutBtn').addEventListener('click', () => { 
+            localStorage.clear();
+            msalInstance.logoutPopup().then(() => window.location.reload()).catch(() => window.location.reload());
+        });
+
+        const searchInput = document.getElementById('searchInput');
+        const clearSearchBtn = document.getElementById('clearSearchBtn');
+
+        searchInput.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            clearSearchBtn.style.display = term.length > 0 ? 'block' : 'none';
+            filteredGames = allGames.filter(g => g.name.toLowerCase().includes(term));
+            currentPage = 1;
+            renderTable();
+        });
+
+        clearSearchBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            clearSearchBtn.style.display = 'none';
+            filteredGames = [...allGames];
+            currentPage = 1;
+            renderTable();
+            searchInput.focus();
+        });
+
+        window.refreshImage = async (imgElement, imageId, gameId) => {
+            if (!imageId || imageId === 'undefined' || imageId === 'null' || imgElement.dataset.retrying) {
+                imgElement.classList.add('fallback-img');
+                return;
+            }
+            imgElement.dataset.retrying = 'true'; // Prevent infinite loops
+            try {
+                const token = await getAccessToken();
+                if (!token) return;
+                const res = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${imageId}`, { headers: { 'Authorization': `Bearer ${token}` } });
+                if (res.ok) {
+                    const data = await res.json();
+                    const newUrl = data['@microsoft.graph.downloadUrl'];
+                    if (newUrl) {
+                        imgElement.src = newUrl;
+                        imgElement.classList.remove('fallback-img');
+                        // Update cache to prevent future errors in this session
+                        const gameIndex = allGames.findIndex(g => g.id === gameId);
+                        if (gameIndex !== -1) {
+                            allGames[gameIndex].image = newUrl;
+                            localStorage.setItem(`db_${currentConsole}`, JSON.stringify(allGames));
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error("Error al refrescar imagen:", e);
+                imgElement.classList.add('fallback-img');
+            }
+        };
+
+        init();
+    </script>
+</body>
+</html>
