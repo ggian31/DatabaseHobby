@@ -352,12 +352,17 @@
         const renderTable = () => {
             if (!tbody) return;
             tbody.innerHTML = '';
-            const totalPages = Math.ceil(filteredGames.length / itemsPerPage);
-            updatePaginationUI(totalPages);
+            
+            // Determinar itemsPerPage dinámicamente
+            const consoleData = window.ConsoleConfig.find(c => c.id === currentConsole);
+            const currentItemsPerPage = (consoleData && consoleData.itemsPerPage) ? consoleData.itemsPerPage : itemsPerPage;
+            
+            const totalPages = Math.ceil(filteredGames.length / currentItemsPerPage);
+            updatePaginationUI(totalPages, currentItemsPerPage);
             if (filteredGames.length === 0) { document.getElementById('noResults').classList.remove('hidden'); return; }
             document.getElementById('noResults').classList.add('hidden');
-            const start = (currentPage - 1) * itemsPerPage;
-            const pageItems = filteredGames.slice(start, start + itemsPerPage);
+            const start = (currentPage - 1) * currentItemsPerPage;
+            const pageItems = filteredGames.slice(start, start + currentItemsPerPage);
             
             pageItems.forEach(game => {
                 const tr = document.createElement('tr');
@@ -402,18 +407,31 @@
             updateBulkDeleteBtn();
         };
 
-        function updatePaginationUI(totalPages) {
+        function updatePaginationUI(totalPages, currentItemsPerPage) {
             const pT = document.getElementById('pagination-top');
             const pB = document.getElementById('pagination-bottom');
-            if (totalPages <= 1 && filteredGames.length < itemsPerPage) { pT.classList.add('hidden'); pB.classList.add('hidden'); return; }
-            pT.classList.remove('hidden'); pB.classList.remove('hidden');
-            const startItem = (currentPage - 1) * itemsPerPage + 1;
-            const endItem = Math.min(currentPage * itemsPerPage, filteredGames.length);
+            
+            // Si no hay juegos, ocultamos todo
+            if (filteredGames.length === 0) {
+                pT.classList.add('hidden');
+                pB.classList.add('hidden');
+                return;
+            }
+
+            pT.classList.remove('hidden');
+            pB.classList.remove('hidden');
+            
+            const startItem = (currentPage - 1) * currentItemsPerPage + 1;
+            const endItem = Math.min(currentPage * currentItemsPerPage, filteredGames.length);
+            
+            // Si solo hay una página, ocultamos los botones de navegación pero dejamos el info
+            const hideNav = totalPages <= 1 ? 'style="display:none;"' : '';
+            
             const content = `
                 <div class="nav-container">
-                    <button class="btn-page btn-prev">Anterior</button>
+                    <button class="btn-page btn-prev" ${hideNav}>Anterior</button>
                     <span class="page-info">${startItem}–${endItem} de ${filteredGames.length.toLocaleString('es-ES')}</span>
-                    <button class="btn-page btn-next">Siguiente</button>
+                    <button class="btn-page btn-next" ${hideNav}>Siguiente</button>
                     <button class="btn-jump btn-down">IR ABAJO ↓</button>
                 </div>
             `;
