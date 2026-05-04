@@ -129,10 +129,13 @@
             auth: {
                 clientId: "e84e7e86-c186-43aa-906b-d1e9fe8ec578",
                 authority: "https://login.microsoftonline.com/common",
-                redirectUri: window.location.origin + window.location.pathname,
+                redirectUri: window.location.href.split('?')[0].split('#')[0],
                 navigateToLoginRequestUrl: false
             },
-            cache: { cacheLocation: "sessionStorage" }
+            cache: { 
+                cacheLocation: "localStorage",
+                storeAuthStateInCookie: true
+            }
         };
         const msalInstance = new msal.PublicClientApplication(msalConfig);
         const loginRequest = { scopes: ["User.Read", "Files.Read", "Files.ReadWrite"] };
@@ -188,6 +191,15 @@
         }
 
         async function init() {
+            // Si estamos dentro de un popup de login, MSAL manejará la respuesta automáticamente. 
+            // Detenemos la ejecución de la app para no mostrar el Login dentro del popup.
+            if (window !== window.parent || (window.opener && window.opener !== window && window.name)) {
+                try {
+                    await msalInstance.handleRedirectPromise();
+                } catch (e) {}
+                return;
+            }
+
             // Inicializar configuración multi-archivo
             if (window.ConsoleConfig && window.ConsoleConfig.length > 0) {
                 currentConsole = window.ConsoleConfig.find(c => c.id === 'NES') ? 'NES' : window.ConsoleConfig[0].id;
