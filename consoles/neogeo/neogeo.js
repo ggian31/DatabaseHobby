@@ -7,8 +7,8 @@ window.ConsoleConfig.push({
     badgeBg: '#000000',
     badgeColor: '#f59e0b',
     itemsPerPage: 300,
-    paths: ['/Archivos/001 Instaladores/Juegos/Emuladores/neogeo', '/Documents/Archivos/001 Instaladores/Juegos/Emuladores/neogeo'],
+    paths: ['/Archivos/001 Instaladores/Juegos/Emuladores/NEO-GEO', '/Documents/Archivos/001 Instaladores/Juegos/Emuladores/NEO-GEO'],
     targets: [ 
-        { name: 'Roms', platform: 'NEO GEO', img: ['downloaded_images', 'image'] }
+        { name: 'ROMS', platform: 'NEO GEO', img: ['downloaded_images', 'image'] }
     ]
 });
