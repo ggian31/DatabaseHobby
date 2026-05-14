@@ -106,6 +106,7 @@
     <script src="consoles/wii/wii.js"></script>
     <script src="consoles/wiiu/wiiu.js"></script>
     <script src="consoles/switch/switch.js"></script>
+    <script src="consoles/nds/nds.js"></script>
 
     <script>
         const log = (msg) => {
@@ -342,7 +343,7 @@
 
         async function crawlFolder(folderId, relativePath, platform, imageMap) {
             const items = await fetchAll(`https://graph.microsoft.com/v1.0/me/drive/items/${folderId}/children`);
-            const extensions = ['.zip', '.smc', '.sfc', '.nes', '.gb', '.gbc', '.gba', '.iso', '.bin', '.chd', '.cdi', '.n64', '.z64', '.v64'];
+            const extensions = ['.zip', '.smc', '.sfc', '.nes', '.gb', '.gbc', '.gba', '.iso', '.bin', '.chd', '.cdi', '.n64', '.z64', '.v64', '.nds'];
             for (const item of items) {
                 if (item.folder) {
                     if (item.name.toLowerCase().endsWith('.zip')) addGame(item, relativePath, platform, imageMap);
